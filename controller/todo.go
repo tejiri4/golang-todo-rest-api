@@ -5,7 +5,6 @@ import (
 	"github.com/tejiri4/golang-todo-rest-api/database"
 	"github.com/gorilla/mux"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"strconv"
 )
@@ -46,7 +45,6 @@ func CreateTodo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if errs := todo.Validate(); len(errs) > 0 {
-		fmt.Println(todo.Todo)
 		err := map[string]interface{}{"message": errs}
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(err)
@@ -58,3 +56,31 @@ func CreateTodo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+
+func DeleteTodo(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	todoID, _ := strconv.Atoi(mux.Vars(r)["id"])
+	todosCopy := append(database.AllTodo{}, database.Todos...)
+
+	for i, todo := range database.Todos {
+		if todo.ID == todoID {
+            database.Todos = append(todosCopy[:i],todosCopy[i+1:]... )
+			json.NewEncoder(w).Encode(database.Todos)
+		}
+	}
+}
+
+func PatchTodo(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	todoID, _ := strconv.Atoi(mux.Vars(r)["id"])
+	var reqObj database.Todo
+	body, _ := ioutil.ReadAll(r.Body)
+	json.Unmarshal(body, &reqObj)
+
+	for i, todo := range database.Todos {
+		if todo.ID == todoID {
+			database.Todos[i].Todo = reqObj.Todo;
+			json.NewEncoder(w).Encode(database.Todos[i])
+		}
+	}
+}
